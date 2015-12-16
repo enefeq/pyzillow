@@ -69,7 +69,7 @@ class ZillowWrapper(object):
             raise ZillowFail
 
         try:
-            response = ElementTree.fromstring(request.text)
+            response = ElementTree.fromstring(request.text.encode('utf-8'))
         except ElementTree.ParseError:
             print (
                 "Zillow response is not a valid XML (%s)" % (
