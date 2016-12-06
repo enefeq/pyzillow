@@ -80,8 +80,9 @@ class ZillowError(Exception):
 
 class ZillowFail(Exception):
 
-    def __init__(self):
-        Exception.__init__(self)
+    def __init__(self, message='', http_error=None):
+        Exception.__init__(self, message)
+        self.http_error = http_error
 
 
 class ZillowNoResults(Exception):

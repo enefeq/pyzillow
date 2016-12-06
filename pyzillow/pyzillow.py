@@ -11,11 +11,15 @@ class ZillowWrapper(object):
     """
     """
 
-    def __init__(self, api_key=None):
+    def __init__(self, api_key=None, requests_extra=None):
         """
 
         """
         self.api_key = api_key
+
+        if requests_extra is None:
+            requests_extra = {}
+        self.requests_extra = requests_extra
 
     def get_deep_search_results(self, address, zipcode):
         """
@@ -47,36 +51,40 @@ class ZillowWrapper(object):
         """
 
         try:
+            headers = {
+                'User-Agent': ''.join([
+                    'pyzillow/',
+                    __version__,
+                    ' (Python)'
+                ])
+            }
+            headers.update(self.requests_extra.pop('headers', {}))
+
             request = requests.get(
                 url=url,
                 params=params,
-                headers={
-                    'User-Agent': ''.join([
-                        'pyzillow/',
-                        __version__,
-                        ' (Python)'
-                    ])
-                })
+                headers=headers,
+                **self.requests_extra
+            )
         except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.TooManyRedirects,
-                requests.exceptions.Timeout):
-            raise ZillowFail
+                requests.exceptions.ConnectionError,
+                requests.exceptions.TooManyRedirects,
+                requests.exceptions.Timeout) as exc:
+            raise ZillowFail(http_error=exc)
 
         try:
             request.raise_for_status()
-        except requests.exceptions.HTTPError:
-            raise ZillowFail
+        except requests.exceptions.HTTPError as exc:
+            raise ZillowFail(http_error=exc)
 
         try:
             response = ElementTree.fromstring(request.text.encode('utf-8'))
         except ElementTree.ParseError:
-            print (
+            raise ZillowFail(
                 "Zillow response is not a valid XML (%s)" % (
                     params['address']
                 )
             )
-            raise ZillowFail
 
         if response.findall('message/code')[0].text is not '0':
             raise ZillowError(int(response.findall('message/code')[0].text))
@@ -156,7 +164,7 @@ class GetDeepSearchResults(ZillowResults):
         'zestimate_last_updated': 'result/zestimate/last-updated',
         'zestimate_value_change': 'result/zestimate/valueChange',
         'zestimate_valuation_range_high':
-        'result/zestimate/valuationRange/high',
+            'result/zestimate/valuationRange/high',
         'zestimate_valuationRange_low': 'result/zestimate/valuationRange/low',
         'zestimate_percentile': 'result/zestimate/percentile',
     }
