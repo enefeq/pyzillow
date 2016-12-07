@@ -85,6 +85,12 @@ class ZillowFail(Exception):
         self.http_error = http_error
 
 
+class ZillowCaptchaError(ZillowFail):
+    """
+    Signifies that Zillow presented a Captcha to us
+    """
+
+
 class ZillowNoResults(Exception):
 
     def __init__(self):

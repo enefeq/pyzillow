@@ -3,7 +3,7 @@ import requests
 
 from xml.etree import cElementTree as ElementTree  # for zillow API
 
-from .pyzillowerrors import ZillowError, ZillowFail, ZillowNoResults
+from .pyzillowerrors import ZillowCaptchaError, ZillowError, ZillowFail, ZillowNoResults
 from . import __version__
 
 
@@ -78,13 +78,21 @@ class ZillowWrapper(object):
             raise ZillowFail(http_error=exc)
 
         try:
-            response = ElementTree.fromstring(request.text.encode('utf-8'))
+            text = request.text.encode('utf-8')
+            response = ElementTree.fromstring(text)
         except ElementTree.ParseError:
-            raise ZillowFail(
-                "Zillow response is not a valid XML (%s)" % (
-                    params['address']
+            if 'captcha-form' in text:
+                raise ZillowCaptchaError(
+                    "Zillow served a captcha (%s)" % (
+                        params['address']
+                    )
                 )
-            )
+            else:
+                raise ZillowFail(
+                    "Zillow response is not a valid XML (%s)" % (
+                        params['address']
+                    )
+                )
 
         if response.findall('message/code')[0].text is not '0':
             raise ZillowError(int(response.findall('message/code')[0].text))
