@@ -70,12 +70,12 @@ class ZillowWrapper(object):
                 requests.exceptions.ConnectionError,
                 requests.exceptions.TooManyRedirects,
                 requests.exceptions.Timeout) as exc:
-            raise ZillowFail(http_error=exc)
+            raise ZillowFail(http_error=exc, url=url)
 
         try:
             request.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            raise ZillowFail(http_error=exc)
+            raise ZillowFail(http_error=exc, url=url)
 
         try:
             text = request.text.encode('utf-8')
@@ -85,13 +85,16 @@ class ZillowWrapper(object):
                 raise ZillowCaptchaError(
                     "Zillow served a captcha (%s)" % (
                         params['address']
-                    )
+                    ),
+                    url=url
                 )
             else:
                 raise ZillowFail(
                     "Zillow response is not a valid XML (%s)" % (
                         params['address']
-                    )
+                    ),
+                    url=url,
+                    content=text
                 )
 
         if response.findall('message/code')[0].text is not '0':

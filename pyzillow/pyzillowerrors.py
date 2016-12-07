@@ -80,9 +80,11 @@ class ZillowError(Exception):
 
 class ZillowFail(Exception):
 
-    def __init__(self, message='', http_error=None):
+    def __init__(self, message='', http_error=None, url=None, content=None):
         Exception.__init__(self, message)
         self.http_error = http_error
+        self.url = url
+        self.content = content
 
 
 class ZillowCaptchaError(ZillowFail):
